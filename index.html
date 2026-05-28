@@ -247,6 +247,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg2);color:#1e293b;min-he
     <div class="online-dot"></div>
     <span class="online-lbl">Sisteem aanlyn</span>
     <span id="syncStatus" style="font-size:12px;color:#22c55e;margin-left:12px;font-weight:500"></span>
+    <button id="tekenInBtn" onclick="teken_in()" style="display:none;margin-left:12px;background:#4285f4;color:#fff;border:none;padding:5px 14px;border-radius:var(--radius);font-family:inherit;font-size:12px;cursor:pointer;align-items:center;gap:6px"><i class="ti ti-brand-google" style="font-size:13px"></i> Teken in met Google</button>
   </div>
 
   <div class="content">
@@ -838,7 +839,11 @@ function initialiseerGoogle(){
     client_id:CLIENT_ID,
     scope:SCOPES,
     callback:async(resp)=>{
-      if(resp.error){toonSyncStatus("fout");return;}
+      if(resp.error){
+        console.log("OAuth fout:",resp.error);
+        toonSyncStatus("fout");
+        return;
+      }
       accessToken=resp.access_token;
       toonSyncStatus("laai");
       const data=await laaiVanSheet();
@@ -847,8 +852,12 @@ function initialiseerGoogle(){
         try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
       }
       initDB();renderAll();toonSyncStatus("ok");
+      document.getElementById("tekenInBtn").style.display="none";
     }
   });
+  // Wys teken in knoppie
+  document.getElementById("tekenInBtn").style.display="inline-flex";
+  // Probeer stil inteken
   tokenClient.requestAccessToken({prompt:""});
 }
 
