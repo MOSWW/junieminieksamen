@@ -831,44 +831,26 @@ function toonSyncStatus(staat){
 }
 
 function teken_in(){
-  if(!tokenClient){
-    // Wag vir Google script om te laai
-    if(typeof google === 'undefined'){
-      showToast("Google laai nog... probeer weer");
-      setTimeout(teken_in, 2000);
-      return;
-    }
-    initialiseerGoogle();
-    setTimeout(()=>tokenClient&&tokenClient.requestAccessToken({prompt:"select_account"}), 500);
-    return;
-  }
+  if(typeof google==='undefined'){showToast("Google laai nog...");return;}
+  if(!tokenClient)initialiseerGoogle();
   tokenClient.requestAccessToken({prompt:"select_account"});
 }
 
 function initialiseerGoogle(){
+  if(typeof google==='undefined')return;
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:CLIENT_ID,
     scope:SCOPES,
     callback:async(resp)=>{
-      if(resp.error){
-        console.log("OAuth fout:",resp.error);
-        toonSyncStatus("fout");
-        return;
-      }
+      if(resp.error){console.log("OAuth fout:",resp.error);toonSyncStatus("fout");return;}
       accessToken=resp.access_token;
+      document.getElementById("tekenInBtn").style.display="none";
       toonSyncStatus("laai");
       const data=await laaiVanSheet();
-      if(data){
-        db=data;
-        try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
-      }
+      if(data){db=data;try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}}
       initDB();renderAll();toonSyncStatus("ok");
-      document.getElementById("tekenInBtn").style.display="none";
     }
   });
-  // Wys teken in knoppie
-  document.getElementById("tekenInBtn").style.display="inline-flex";
-  // Probeer stil inteken
   tokenClient.requestAccessToken({prompt:""});
 }
 
