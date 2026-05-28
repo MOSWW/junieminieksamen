@@ -247,7 +247,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg2);color:#1e293b;min-he
     <div class="online-dot"></div>
     <span class="online-lbl">Sisteem aanlyn</span>
     <span id="syncStatus" style="font-size:12px;color:#22c55e;margin-left:12px;font-weight:500"></span>
-    <button id="tekenInBtn" onclick="teken_in()" style="display:none;margin-left:12px;background:#4285f4;color:#fff;border:none;padding:5px 14px;border-radius:var(--radius);font-family:inherit;font-size:12px;cursor:pointer;align-items:center;gap:6px"><i class="ti ti-brand-google" style="font-size:13px"></i> Teken in met Google</button>
+    <button id="tekenInBtn" onclick="teken_in()" style="display:inline-flex;margin-left:12px;background:#4285f4;color:#fff;border:none;padding:5px 14px;border-radius:var(--radius);font-family:inherit;font-size:12px;cursor:pointer;align-items:center;gap:6px"><i class="ti ti-brand-google" style="font-size:13px"></i> Teken in</button>
   </div>
 
   <div class="content">
@@ -831,7 +831,18 @@ function toonSyncStatus(staat){
 }
 
 function teken_in(){
-  if(tokenClient)tokenClient.requestAccessToken();
+  if(!tokenClient){
+    // Wag vir Google script om te laai
+    if(typeof google === 'undefined'){
+      showToast("Google laai nog... probeer weer");
+      setTimeout(teken_in, 2000);
+      return;
+    }
+    initialiseerGoogle();
+    setTimeout(()=>tokenClient&&tokenClient.requestAccessToken({prompt:"select_account"}), 500);
+    return;
+  }
+  tokenClient.requestAccessToken({prompt:"select_account"});
 }
 
 function initialiseerGoogle(){
