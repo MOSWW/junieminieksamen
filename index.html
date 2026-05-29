@@ -849,6 +849,15 @@ function initialiseerGoogle(){
       const data=await laaiVanSheet();
       if(data){db=data;try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}}
       initDB();renderAll();toonSyncStatus("ok");
+      // Herlaai elke 30 sekondes
+      setInterval(async()=>{
+        const nuutsteData=await laaiVanSheet();
+        if(nuutsteData){
+          db=nuutsteData;
+          try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
+          initDB();renderAll();
+        }
+      }, 30000);
     }
   });
   tokenClient.requestAccessToken({prompt:""});
@@ -1934,5 +1943,3 @@ load();
 renderAll();
 </script>
 <script src="https://accounts.google.com/gsi/client" onload="initialiseerGoogle()" async defer></script>
-</body>
-</html>
