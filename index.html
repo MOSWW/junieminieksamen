@@ -247,7 +247,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg2);color:#1e293b;min-he
     <div class="online-dot"></div>
     <span class="online-lbl">Sisteem aanlyn</span>
     <span id="syncStatus" style="font-size:12px;color:#22c55e;margin-left:12px;font-weight:500"></span>
-    <button id="tekenInBtn" onclick="teken_in()" style="display:inline-flex;margin-left:12px;background:#4285f4;color:#fff;border:none;padding:5px 14px;border-radius:var(--radius);font-family:inherit;font-size:12px;cursor:pointer;align-items:center;gap:6px"><i class="ti ti-brand-google" style="font-size:13px"></i> Teken in</button>
   </div>
 
   <div class="content">
@@ -772,116 +771,125 @@ let currentGraad="Graad 10";
 let db={eksamens:[],bystand:[],flags:[],gebruikers:[],checks:{}};
 
 // ================================================================
-// GOOGLE SHEETS API INTEGRASIE
+// FIREBASE REALTIME DATABASE
 // ================================================================
-const CLIENT_ID = "645468833085-or9haj7flc56ocvs0pt8hl8ed124u63l.apps.googleusercontent.com";
-const SHEET_ID = "1mDqH2WVtBybCrWJOGP-bCxvYiuwTzQHe4TTmaCEWZ70";
-const GITHUB_PAGES_URL = "https://mosww.github.io/junieeksamen";
-const SHEET_NAME = "Dashboard_Data";
-const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
+const FIREBASE_URL = "https://eksamen-stelsel-e1836-default-rtdb.europe-west1.firebasedatabase.app";
 
-let tokenClient;
-let accessToken = null;
 let _syncTimer = null;
+let _luisterAktief = false;
+let _laasStoor = 0;
 
 function sk(k){return"eksstelsel3_"+k;}
-
-async function stoorNaSheet(){
-  if(!accessToken){toonSyncStatus("fout");return;}
-  toonSyncStatus("besig");
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SHEET_NAME+"!A1:A2")}?valueInputOption=RAW`;
-  try{
-    const r=await fetch(url,{
-      method:"PUT",
-      headers:{"Authorization":"Bearer "+accessToken,"Content-Type":"application/json"},
-      body:JSON.stringify({values:[[JSON.stringify(db)],[new Date().toLocaleString("af-ZA")]]})
-    });
-    toonSyncStatus(r.ok?"ok":"fout");
-  }catch(e){toonSyncStatus("fout");}
-}
-
-async function laaiVanSheet(){
-  if(!accessToken)return null;
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SHEET_NAME+"!A1")}`;
-  try{
-    const r=await fetch(url,{headers:{"Authorization":"Bearer "+accessToken}});
-    if(!r.ok)return null;
-    const j=await r.json();
-    if(j.values&&j.values[0]&&j.values[0][0])return JSON.parse(j.values[0][0]);
-  }catch(e){}
-  return null;
-}
 
 function toonSyncStatus(staat){
   const el=document.getElementById("syncStatus");
   if(!el)return;
-  const ikone={besig:"⟳",ok:"●",fout:"🔑",laai:"⟳"};
+  const ikone={besig:"⟳",ok:"●",fout:"!",laai:"⟳"};
   const kleure={besig:"#94a3b8",ok:"#22c55e",fout:"#ef4444",laai:"#94a3b8"};
-  const tekste={besig:"Stoor...",ok:"Gestoor",fout:"Teken in",laai:"Laai..."};
+  const tekste={besig:"Stoor...",ok:"Gestoor",fout:"Verbinding fout",laai:"Laai..."};
   el.style.color=kleure[staat];
   el.textContent=ikone[staat]+" "+tekste[staat];
-  el.style.cursor=staat==="fout"?"pointer":"default";
-  el.onclick=staat==="fout"?()=>teken_in():null;
 }
 
-function teken_in(){
-  if(typeof google==='undefined'){showToast("Google laai nog...");return;}
-  if(!tokenClient)initialiseerGoogle();
-  tokenClient.requestAccessToken({prompt:"select_account"});
+// Stoor ALLES na Firebase — klaslyste ook
+async function stoorNaFirebase(){
+  toonSyncStatus("besig");
+  const dbKlein={
+    eksamens:db.eksamens,
+    bystand:db.bystand,
+    flags:db.flags,
+    checks:db.checks,
+    afwesig:db.afwesig,
+    gemis:db.gemis,
+    konsessies:db.konsessies,
+    reelings:db.reelings||[]
+  };
+  // Stoor aktiewe data
+  try{
+    const r=await fetch(FIREBASE_URL+"/data.json",{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(dbKlein)
+    });
+    _laasStoor=Date.now();
+    toonSyncStatus(r.ok?"ok":"fout");
+  }catch(e){toonSyncStatus("fout");}
+  // Stoor klaslyste apart — slegs as dit verander het
+  if(db.klaslystePerVraestel&&Object.keys(db.klaslystePerVraestel).length>0){
+    try{
+      await fetch(FIREBASE_URL+"/klaslyste.json",{
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(db.klaslystePerVraestel)
+      });
+    }catch(e){}
+  }
 }
 
-let laasInteraksie = Date.now();
-let besigMetStoor = false;
-let tokenVervalTyd = null;
-document.addEventListener('click', ()=>laasInteraksie=Date.now());
-document.addEventListener('keydown', ()=>laasInteraksie=Date.now());
-
-function initialiseerGoogle(){
-  if(typeof google==='undefined')return;
-  tokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:CLIENT_ID,
-    scope:SCOPES,
-    prompt:"",
-    callback:async(resp)=>{
-      if(resp.error){console.log("OAuth fout:",resp.error);toonSyncStatus("fout");return;}
-      accessToken=resp.access_token;
-      tokenVervalTyd = Date.now() + (resp.expires_in * 1000) - 300000; // 5 min voor verval
-      document.getElementById("tekenInBtn").style.display="none";
-      toonSyncStatus("laai");
-      const data=await laaiVanSheet();
-      if(data){db=data;try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}}
-      initDB();renderAll();toonSyncStatus("ok");
-      // Herlaai data elke 15 sekondes
-      setInterval(async()=>{
-        // Hernu token as dit amper verval
-        if(tokenVervalTyd && Date.now() > tokenVervalTyd){
-          tokenClient.requestAccessToken({prompt:""});
-          return;
-        }
-        // Moenie herlaai as gebruiker besig is nie
-        if(besigMetStoor) return;
-        const sekondesSedertInteraksie = (Date.now() - laasInteraksie) / 1000;
-        if(sekondesSedertInteraksie < 30) return; // Wag 30 sekondes na laaste klik
-        const nuutsteData=await laaiVanSheet();
-        if(nuutsteData && !besigMetStoor){
-          db=nuutsteData;
-          try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
-          initDB();renderAll();toonSyncStatus("ok");
-        }
-      }, 15000);
+// Laai data van Firebase — klaslyste een keer per sessie
+let klaslysteGelaaiBefore = false;
+async function laaiVanFirebase(){
+  toonSyncStatus("laai");
+  try{
+    // Laai aktiewe data
+    const r=await fetch(FIREBASE_URL+"/data.json");
+    const data=await r.json();
+    if(data){
+      db=data;
+      db.klaslystePerVraestel=db.klaslystePerVraestel||{};
     }
+    // Laai klaslyste slegs eerste keer
+    if(!klaslysteGelaaiBefore){
+      klaslysteGelaaiBefore=true;
+      try{
+        const rk=await fetch(FIREBASE_URL+"/klaslyste.json");
+        const klaslyste=await rk.json();
+        if(klaslyste)db.klaslystePerVraestel=klaslyste;
+      }catch(e){}
+    }
+    try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
+    initDB();renderAll();
+    toonSyncStatus("ok");
+    beginLuister();
+  }catch(e){
+    toonSyncStatus("fout");
+    setTimeout(laaiVanFirebase,5000);
+  }
+}
+
+// Luister vir veranderinge van ander gebruikers
+function beginLuister(){
+  if(_luisterAktief)return;
+  _luisterAktief=true;
+  const es=new EventSource(FIREBASE_URL+"/data.json");
+  es.addEventListener("put",(e)=>{
+    try{
+      const pkg=JSON.parse(e.data);
+      const nuutData=pkg.data;
+      if(!nuutData)return;
+      if(Date.now()-_laasStoor<3000)return;
+      if(_syncTimer)return;
+      // Behou huidige klaslyste
+      nuutData.klaslystePerVraestel=db.klaslystePerVraestel||{};
+      db=nuutData;
+      try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
+      initDB();renderAll();toonSyncStatus("ok");
+    }catch(err){}
   });
-  tokenClient.requestAccessToken({prompt:""});
+  es.onerror=()=>{
+    _luisterAktief=false;
+    es.close();
+    setTimeout(beginLuister,5000);
+  };
 }
 
 function save(){
   try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
-  besigMetStoor = true;
   clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(async()=>{
-    await stoorNaSheet();
-    besigMetStoor = false;
-  }, 1500);
+  _syncTimer=setTimeout(async()=>{
+    await stoorNaFirebase();
+    _syncTimer=null;
+  },800);
 }
 
 function load(){
@@ -1962,5 +1970,7 @@ document.querySelectorAll(".modal-bg").forEach(m=>m.addEventListener("click",fun
 
 load();
 renderAll();
+laaiVanFirebase();
 </script>
-<script src="https://accounts.google.com/gsi/client" onload="initialiseerGoogle()" async defer></script>
+</body>
+</html>
