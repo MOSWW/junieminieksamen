@@ -832,6 +832,7 @@ function teken_in(){
 
 let laasInteraksie = Date.now();
 let besigMetStoor = false;
+let tokenVervalTyd = null;
 document.addEventListener('click', ()=>laasInteraksie=Date.now());
 document.addEventListener('keydown', ()=>laasInteraksie=Date.now());
 
@@ -840,16 +841,23 @@ function initialiseerGoogle(){
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:CLIENT_ID,
     scope:SCOPES,
+    prompt:"",
     callback:async(resp)=>{
       if(resp.error){console.log("OAuth fout:",resp.error);toonSyncStatus("fout");return;}
       accessToken=resp.access_token;
+      tokenVervalTyd = Date.now() + (resp.expires_in * 1000) - 300000; // 5 min voor verval
       document.getElementById("tekenInBtn").style.display="none";
       toonSyncStatus("laai");
       const data=await laaiVanSheet();
       if(data){db=data;try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}}
       initDB();renderAll();toonSyncStatus("ok");
-      // Herlaai elke 15 sekondes — maar nie as gebruiker besig is nie
+      // Herlaai data elke 15 sekondes
       setInterval(async()=>{
+        // Hernu token as dit amper verval
+        if(tokenVervalTyd && Date.now() > tokenVervalTyd){
+          tokenClient.requestAccessToken({prompt:""});
+          return;
+        }
         if(besigMetStoor) return;
         const sekondesSedertInteraksie = (Date.now() - laasInteraksie) / 1000;
         if(sekondesSedertInteraksie < 5) return;
