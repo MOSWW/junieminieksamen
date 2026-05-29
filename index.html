@@ -770,9 +770,46 @@ const ALL_IDS=Object.values(CHECKS).flat().map(i=>i.id);
 let currentGraad="Graad 10";
 let db={eksamens:[],bystand:[],flags:[],gebruikers:[],checks:{}};
 
-// ================================================================
-// FIREBASE REALTIME DATABASE
-// ================================================================
+const DASHBOARD_WAG = "MOS2026!";
+
+// Wagwoord skerm
+function wagwoordKontroleer(){
+  const gestoor = sessionStorage.getItem("mosWag");
+  if(gestoor === DASHBOARD_WAG) return true;
+  return false;
+}
+
+function wagwoordTeken(){
+  document.body.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;font-family:'DM Sans',sans-serif">
+      <div style="background:#fff;border-radius:16px;padding:48px;width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+        <div style="font-size:48px;margin-bottom:16px">🔒</div>
+        <h1 style="font-size:22px;font-weight:700;color:#1e293b;margin:0 0 8px">Junie Mini Eksamen</h1>
+        <p style="color:#64748b;font-size:14px;margin:0 0 32px">Bestuurstelsel — MOS Wêreldwyd</p>
+        <input id="wagInput" type="password" placeholder="Wagwoord..." 
+          style="width:100%;box-sizing:border-box;padding:12px 16px;border:2px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:15px;margin-bottom:12px;outline:none"
+          onkeydown="if(event.key==='Enter')wagTeken()">
+        <button onclick="wagTeken()" 
+          style="width:100%;padding:12px;background:#f97316;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer">
+          Toegang verkry
+        </button>
+        <p id="wagFout" style="color:#ef4444;font-size:13px;margin:12px 0 0;display:none">Verkeerde wagwoord. Probeer weer.</p>
+      </div>
+    </div>`;
+  setTimeout(()=>document.getElementById("wagInput").focus(),100);
+}
+
+function wagTeken(){
+  const w = document.getElementById("wagInput").value;
+  if(w === DASHBOARD_WAG){
+    sessionStorage.setItem("mosWag", DASHBOARD_WAG);
+    location.reload();
+  } else {
+    document.getElementById("wagFout").style.display="block";
+    document.getElementById("wagInput").value="";
+    document.getElementById("wagInput").focus();
+  }
+}
 const FIREBASE_URL = "https://eksamen-stelsel-e1836-default-rtdb.europe-west1.firebasedatabase.app";
 
 let _syncTimer = null;
@@ -1969,8 +2006,12 @@ function showToast(msg){
 document.querySelectorAll(".modal-bg").forEach(m=>m.addEventListener("click",function(e){if(e.target===this)this.classList.remove("open");}));
 
 load();
-renderAll();
-laaiVanFirebase();
+if(!wagwoordKontroleer()){
+  wagwoordTeken();
+} else {
+  renderAll();
+  laaiVanFirebase();
+}
 </script>
 </body>
 </html>
