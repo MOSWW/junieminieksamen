@@ -786,12 +786,6 @@ let _syncTimer = null;
 
 function sk(k){return"eksstelsel3_"+k;}
 
-function save(){
-  try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
-  clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(stoorNaSheet, 1500);
-}
-
 async function stoorNaSheet(){
   if(!accessToken){toonSyncStatus("fout");return;}
   toonSyncStatus("besig");
@@ -836,6 +830,11 @@ function teken_in(){
   tokenClient.requestAccessToken({prompt:"select_account"});
 }
 
+let laasInteraksie = Date.now();
+let besigMetStoor = false;
+document.addEventListener('click', ()=>laasInteraksie=Date.now());
+document.addEventListener('keydown', ()=>laasInteraksie=Date.now());
+
 function initialiseerGoogle(){
   if(typeof google==='undefined')return;
   tokenClient=google.accounts.oauth2.initTokenClient({
@@ -849,18 +848,31 @@ function initialiseerGoogle(){
       const data=await laaiVanSheet();
       if(data){db=data;try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}}
       initDB();renderAll();toonSyncStatus("ok");
-      // Herlaai elke 30 sekondes
+      // Herlaai elke 15 sekondes — maar nie as gebruiker besig is nie
       setInterval(async()=>{
+        if(besigMetStoor) return;
+        const sekondesSedertInteraksie = (Date.now() - laasInteraksie) / 1000;
+        if(sekondesSedertInteraksie < 5) return;
         const nuutsteData=await laaiVanSheet();
-        if(nuutsteData){
+        if(nuutsteData && !besigMetStoor){
           db=nuutsteData;
           try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
-          initDB();renderAll();
+          initDB();renderAll();toonSyncStatus("ok");
         }
-      }, 30000);
+      }, 15000);
     }
   });
   tokenClient.requestAccessToken({prompt:""});
+}
+
+function save(){
+  try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
+  besigMetStoor = true;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(async()=>{
+    await stoorNaSheet();
+    besigMetStoor = false;
+  }, 1500);
 }
 
 function load(){
