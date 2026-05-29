@@ -858,9 +858,10 @@ function initialiseerGoogle(){
           tokenClient.requestAccessToken({prompt:""});
           return;
         }
+        // Moenie herlaai as gebruiker besig is nie
         if(besigMetStoor) return;
         const sekondesSedertInteraksie = (Date.now() - laasInteraksie) / 1000;
-        if(sekondesSedertInteraksie < 5) return;
+        if(sekondesSedertInteraksie < 30) return; // Wag 30 sekondes na laaste klik
         const nuutsteData=await laaiVanSheet();
         if(nuutsteData && !besigMetStoor){
           db=nuutsteData;
