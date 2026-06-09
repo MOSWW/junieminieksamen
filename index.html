@@ -373,7 +373,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg2);color:#1e293b;min-he
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:500px">
             <div class="form-group">
               <label>Kies vraestel</label>
-              <select id="registerEksamen" style="font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--card-border);border-radius:var(--radius);background:#fff;color:#1e293b" onchange="toonKlaslysStatus()">
+              <select id="registerEksamen" style="font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--card-border);border-radius:var(--radius);background:#fff;color:#1e293b" onchange="toonKlaslysStatus();toonSlotStatus()">
                 <option value="">— Kies vraestel —</option>
               </select>
             </div>
@@ -383,7 +383,37 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg2);color:#1e293b;min-he
             </div>
           </div>
           <div id="klaslysStatusToon" style="margin-top:10px;font-size:13px;color:#64748b"></div>
-          <button class="add-btn" style="margin-top:14px" onclick="oopRegister()"><i class="ti ti-clipboard-list" aria-hidden="true"></i>Maak aftekenregister oop</button>
+
+          <!-- KO: Handmatige slot beheer -->
+          <div id="koSlotBeheer" style="display:none;margin-top:12px;background:#fafbfc;border:1px solid var(--card-border);border-radius:var(--radius);padding:10px 14px;align-items:center;gap:10px">
+            <i class="ti ti-shield-lock" aria-hidden="true" style="font-size:16px;color:#7e22ce;flex-shrink:0"></i>
+            <span style="font-size:13px;color:#64748b;flex:1" id="koSlotStatusTeks">—</span>
+            <button id="koSlotWisselBtn" onclick="koWisselSlot()" style="font-family:inherit;font-size:12px;font-weight:500;padding:5px 14px;border-radius:var(--radius);border:none;cursor:pointer">—</button>
+          </div>
+
+          <div id="registerSlotWaarskuwing" style="display:none;margin-top:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--radius);padding:12px 14px;align-items:flex-start;gap:10px">
+            <i class="ti ti-lock" aria-hidden="true" style="font-size:18px;color:#c2410c;flex-shrink:0;margin-top:1px"></i>
+            <div style="flex:1">
+              <p style="font-size:13px;color:#92400e;font-weight:500;margin-bottom:3px" id="registerSlotNaam"></p>
+              <p style="font-size:12px;color:#b45309">Die register vir hierdie vraestel is reeds gestoor en gesluit. Kontak die koördineerder om dit oop te sluit as 'n regstelling nodig is.</p>
+            </div>
+          </div>
+          <div id="registerKOOntsluitPanel" style="display:none;margin-top:10px;background:#fafbfc;border:1px solid var(--card-border);border-radius:var(--radius);padding:12px 14px">
+            <p style="font-size:12px;color:#64748b;margin-bottom:8px"><i class="ti ti-lock-open" aria-hidden="true" style="margin-right:4px;vertical-align:-2px"></i>Koördineerder — oopsluit vir regstelling</p>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input id="registerKOWag" type="password" placeholder="KO wagwoord..." style="font-family:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--card-border);border-radius:var(--radius);width:180px">
+              <button onclick="registerOopsluitKO()" style="background:var(--navy);color:#fff;border:none;padding:5px 12px;border-radius:var(--radius);font-family:inherit;font-size:12px;cursor:pointer">Oopsluit</button>
+              <span id="registerKOFout" style="font-size:12px;color:#ef4444;display:none">Verkeerde wagwoord.</span>
+            </div>
+          </div>
+          <div id="registerKOOopGesluit" style="display:none;margin-top:10px;background:#f0fdf4;border:1px solid #86efac;border-radius:var(--radius);padding:10px 14px;align-items:center;gap:8px">
+            <i class="ti ti-lock-open" aria-hidden="true" style="color:#166534;font-size:16px"></i>
+            <span style="font-size:13px;color:#166534;flex:1">Register tydelik oopgesluit. Maak regstellings en stoor weer — dit sluit outomaties.</span>
+            <button onclick="registerSluitKOWeer()" style="background:none;border:1px solid #86efac;padding:4px 10px;border-radius:var(--radius);font-family:inherit;font-size:12px;cursor:pointer;color:#166534">Sluit</button>
+          </div>
+          <div style="margin-top:14px">
+            <button class="add-btn" id="registerOopBtn" onclick="oopRegister()"><i class="ti ti-clipboard-list" aria-hidden="true"></i>Maak aftekenregister oop</button>
+          </div>
         </div>
       </div>
 
@@ -487,11 +517,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg2);color:#1e293b;min-he
       <!-- Konsessies -->
       <div class="section-card" style="margin-bottom:16px">
         <div class="section-header">
-          <span class="section-title">Konsessies — Ekstra tyd</span>
+          <span class="section-title" id="konsTitle">Konsessies — Ekstra tyd</span>
           <button id="konsVoegByBtn" class="add-btn" style="display:none" onclick="openAddKonsessie()"><i class="ti ti-plus" aria-hidden="true"></i>Voeg by</button>
         </div>
         <table class="rooster-table">
-          <thead><tr><th>Leerder</th><th>Graad</th><th>Ekstra tyd</th><th>Nota</th><th id="konsAksieTh" style="display:none"></th></tr></thead>
+          <thead><tr><th>Leerder</th><th>Ekstra tyd</th><th>Nota</th><th id="konsAksieTh" style="display:none"></th></tr></thead>
           <tbody id="konsBody"></tbody>
         </table>
         <div class="empty-state" id="konsEmpty">Geen konsessies aangemeld nie.</div>
@@ -504,7 +534,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg2);color:#1e293b;min-he
           <button id="oorsesVoegByBtn" class="add-btn" style="display:none" onclick="openAddReeling('oorsees')"><i class="ti ti-plus" aria-hidden="true"></i>Voeg by</button>
         </div>
         <table class="rooster-table">
-          <thead><tr><th>Leerder</th><th>Graad</th><th>Nota</th><th id="oorsesAksieTh" style="display:none"></th></tr></thead>
+          <thead><tr><th>Leerder</th><th>Nota</th><th id="oorsesAksieTh" style="display:none"></th></tr></thead>
           <tbody id="oorsesBody"></tbody>
         </table>
         <div class="empty-state" id="oorsesEmpty">Geen oorsese leerders aangemeld nie.</div>
@@ -517,7 +547,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg2);color:#1e293b;min-he
           <button id="igoVoegByBtn" class="add-btn" style="display:none" onclick="openAddReeling('igo')"><i class="ti ti-plus" aria-hidden="true"></i>Voeg by</button>
         </div>
         <table class="rooster-table">
-          <thead><tr><th>Leerder</th><th>Graad</th><th>E-posadres</th><th>Nota</th><th id="igoAksieTh" style="display:none"></th></tr></thead>
+          <thead><tr><th>Leerder</th><th>E-posadres</th><th>Nota</th><th id="igoAksieTh" style="display:none"></th></tr></thead>
           <tbody id="igoBody"></tbody>
         </table>
         <div class="empty-state" id="igoEmpty">Geen IGO leerders aangemeld nie.</div>
@@ -530,7 +560,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg2);color:#1e293b;min-he
           <button id="anderVoegByBtn" class="add-btn" style="display:none" onclick="openAddReeling('ander')"><i class="ti ti-plus" aria-hidden="true"></i>Voeg by</button>
         </div>
         <table class="rooster-table">
-          <thead><tr><th>Leerder</th><th>Graad</th><th>Reëling</th><th>Nota</th><th id="anderAksieTh" style="display:none"></th></tr></thead>
+          <thead><tr><th>Leerder</th><th>Reëling</th><th>Nota</th><th id="anderAksieTh" style="display:none"></th></tr></thead>
           <tbody id="anderBody"></tbody>
         </table>
         <div class="empty-state" id="anderEmpty">Geen ander reëlings aangemeld nie.</div>
@@ -839,7 +869,8 @@ async function stoorNaFirebase(){
     afwesig:db.afwesig,
     gemis:db.gemis,
     konsessies:db.konsessies,
-    reelings:db.reelings||[]
+    reelings:db.reelings||[],
+    registerSlotte:db.registerSlotte||{}
   };
   // Stoor aktiewe data
   try{
@@ -945,6 +976,7 @@ function initDB(){
   if(!db.konsessies)db.konsessies=[];
   if(!db.reelings)db.reelings=[];
   if(!db.klaslystePerVraestel)db.klaslystePerVraestel={};
+  if(!db.registerSlotte)db.registerSlotte={};
   db.eksamens.forEach(e=>{if(!db.checks[e.id]){db.checks[e.id]={};ALL_IDS.forEach(id=>{db.checks[e.id][id]=false;})}});
 }
 
@@ -964,9 +996,11 @@ function setGraad(g,el){
   document.getElementById("bystandTitle").textContent="Bystand & Meet — "+g;
   document.getElementById("flagsTitle").textContent="Invigilator Flags — "+g;
   document.getElementById("moderTitle").textContent="Vraestel Checklys — "+g;
+  if(document.getElementById("konsTitle"))document.getElementById("konsTitle").textContent="Konsessies — Ekstra tyd — "+g;
   roosterKOUnlocked=false;
   roosterSluitKO();
   bystandKOUnlocked=false;
+  konsSluit();
   if(document.getElementById("bystandKOSlot")){
     document.getElementById("bystandKOSlot").style.display="flex";
     document.getElementById("bystandKOOntsluit").style.display="none";
@@ -1166,6 +1200,7 @@ function afwesigOntsluitKO(){
   document.getElementById("afwesigSluitBtn").style.display="block";
   document.getElementById("koKlaslysPanel").style.display="block";
   renderKoKlaslysPanel();
+  toonSlotStatus();
 }
 
 function afwesigSluitKO(){
@@ -1174,6 +1209,9 @@ function afwesigSluitKO(){
   document.getElementById("afwesigRolToon").style.color="#1e293b";
   document.getElementById("afwesigSluitBtn").style.display="none";
   document.getElementById("koKlaslysPanel").style.display="none";
+  const kb=document.getElementById("koSlotBeheer");
+  if(kb)kb.style.display="none";
+  toonSlotStatus();
 }
 
 function renderKoKlaslysPanel(){
@@ -1223,25 +1261,116 @@ function toonKlaslysStatus(){
   status.innerHTML=lys.length?`<span style="color:#166534"><i class="ti ti-circle-check" style="vertical-align:-2px;margin-right:4px"></i>${lys.length} leerders in klaslys</span>`:`<span style="color:#ef4444"><i class="ti ti-alert-circle" style="vertical-align:-2px;margin-right:4px"></i>Geen klaslys vir hierdie vraestel nie. Vra die koördineerder om dit op te laai.</span>`;
 }
 
+function isRegisterGesluit(vak,graad){
+  if(!db.registerSlotte)db.registerSlotte={};
+  return !!db.registerSlotte[vak+"|"+graad];
+}
+
 function updateAfwesigFilters(){
   const sel=document.getElementById("afwesigEksamFilter");
   const regSel=document.getElementById("registerEksamen");
-  [sel,regSel].forEach(s=>{
-    const cur=s.value;
-    while(s.options.length>1)s.remove(1);
-    db.eksamens.filter(e=>e.graad===currentGraad).forEach(e=>{
-      const o=document.createElement("option");
-      o.value=e.vak;o.textContent=`${e.vak} (${fmt(e.datum)})`;
-      s.appendChild(o);
-    });
-    s.value=cur;
+  const cur1=sel.value;
+  while(sel.options.length>1)sel.remove(1);
+  db.eksamens.filter(e=>e.graad===currentGraad).forEach(e=>{
+    const o=document.createElement("option");
+    o.value=e.vak;o.textContent=`${e.vak} (${fmt(e.datum)})`;
+    sel.appendChild(o);
   });
+  sel.value=cur1;
+  const cur2=regSel.value;
+  while(regSel.options.length>1)regSel.remove(1);
+  db.eksamens.filter(e=>e.graad===currentGraad).forEach(e=>{
+    const o=document.createElement("option");
+    const gesluit=isRegisterGesluit(e.vak,e.graad);
+    o.value=e.vak;
+    o.textContent=gesluit?`✓ ${e.vak} (${fmt(e.datum)}) — Gesluit`:`${e.vak} (${fmt(e.datum)})`;
+    regSel.appendChild(o);
+  });
+  regSel.value=cur2;
+}
+
+let registerKOOopgesluit=false;
+
+function toonSlotStatus(){
+  const vak=document.getElementById("registerEksamen").value;
+  const warn=document.getElementById("registerSlotWaarskuwing");
+  const koPanel=document.getElementById("registerKOOntsluitPanel");
+  const koOop=document.getElementById("registerKOOopGesluit");
+  const koBeheer=document.getElementById("koSlotBeheer");
+  const btn=document.getElementById("registerOopBtn");
+  if(!vak){
+    warn.style.display="none";koPanel.style.display="none";koOop.style.display="none";
+    if(koBeheer)koBeheer.style.display="none";
+    btn.disabled=false;btn.style.opacity="1";btn.style.cursor="pointer";
+    return;
+  }
+  const gesluit=isRegisterGesluit(vak,currentGraad);
+  // KO handmatige beheer — wys altyd as KO ingeskakel is en vraestel gekies
+  if(koBeheer&&afwesigKORol){
+    koBeheer.style.display="flex";
+    const teks=document.getElementById("koSlotStatusTeks");
+    const wisselBtn=document.getElementById("koSlotWisselBtn");
+    if(gesluit){
+      teks.textContent="Register is gesluit";
+      wisselBtn.textContent="Oopsluit register";
+      wisselBtn.style.background="#7e22ce";wisselBtn.style.color="#fff";
+    } else {
+      teks.textContent="Register is oop";
+      wisselBtn.textContent="Sluit register";
+      wisselBtn.style.background="#0f172a";wisselBtn.style.color="#fff";
+    }
+  } else if(koBeheer){
+    koBeheer.style.display="none";
+  }
+  if(gesluit&&!registerKOOopgesluit){
+    warn.style.display="flex";koPanel.style.display="block";koOop.style.display="none";
+    btn.disabled=true;btn.style.opacity="0.4";btn.style.cursor="not-allowed";
+    document.getElementById("registerSlotNaam").textContent="Register gesluit: "+vak;
+  } else if(gesluit&&registerKOOopgesluit){
+    warn.style.display="none";koPanel.style.display="none";koOop.style.display="flex";
+    btn.disabled=false;btn.style.opacity="1";btn.style.cursor="pointer";
+  } else {
+    warn.style.display="none";koPanel.style.display="none";koOop.style.display="none";
+    btn.disabled=false;btn.style.opacity="1";btn.style.cursor="pointer";
+  }
+}
+
+function koWisselSlot(){
+  const vak=document.getElementById("registerEksamen").value;
+  if(!vak)return;
+  if(!db.registerSlotte)db.registerSlotte={};
+  const sleutel=vak+"|"+currentGraad;
+  if(db.registerSlotte[sleutel]){
+    delete db.registerSlotte[sleutel];
+    registerKOOopgesluit=false;
+    showToast(vak+" — register oopgesluit");
+  } else {
+    db.registerSlotte[sleutel]={gestoor:new Date().toISOString(),datum:""};
+    showToast(vak+" — register gesluit");
+  }
+  save();updateAfwesigFilters();toonSlotStatus();
+}
+
+function registerOopsluitKO(){
+  const w=document.getElementById("registerKOWag").value;
+  if(w!==KO_WAG){document.getElementById("registerKOFout").style.display="block";return;}
+  document.getElementById("registerKOFout").style.display="none";
+  document.getElementById("registerKOWag").value="";
+  registerKOOopgesluit=true;
+  toonSlotStatus();
+  showToast("Register oopgesluit — maak regstellings");
+}
+
+function registerSluitKOWeer(){
+  registerKOOopgesluit=false;
+  toonSlotStatus();
 }
 
 function oopRegister(){
   const eksamen=document.getElementById("registerEksamen").value;
   const datum=document.getElementById("registerDatum").value;
   if(!eksamen){showToast("Kies eers 'n vraestel");return;}
+  if(isRegisterGesluit(eksamen,currentGraad)&&!registerKOOopgesluit){showToast("Register is gesluit");return;}
   const klaslys=(db.klaslystePerVraestel&&db.klaslystePerVraestel[eksamen+"|"+currentGraad])||[];
   if(!klaslys.length){showToast("Geen klaslys vir hierdie vraestel nie");return;}
   registerState={eksamen,datum,graad:currentGraad,leerders:{}};
@@ -1284,6 +1413,7 @@ function filterRegister(){renderRegister();}
 function stoorRegister(){
   if(!db.afwesig)db.afwesig=[];
   if(!db.gemis)db.gemis=[];
+  if(!db.registerSlotte)db.registerSlotte={};
   const {eksamen,datum,leerders,graad}=registerState;
   db.afwesig=db.afwesig.filter(a=>!(a.eksamen===eksamen&&a.datum===datum&&a.graad===graad));
   db.gemis=db.gemis.filter(g=>!(g.vraestel===eksamen&&g.datum===datum&&g.graad===graad));
@@ -1296,7 +1426,10 @@ function stoorRegister(){
       }
     }
   });
-  save();renderAfwesigOorsig();renderGemisGroepe();showToast("Register gestoor — afwesiges verskyn in Gemiste Vraestelle");
+  db.registerSlotte[eksamen+"|"+graad]={gestoor:new Date().toISOString(),datum};
+  registerKOOopgesluit=false;
+  save();updateAfwesigFilters();toonSlotStatus();renderAfwesigOorsig();renderGemisGroepe();
+  showToast("Register gestoor en gesluit");
 }
 
 function sluitRegister(){
@@ -1608,14 +1741,16 @@ function renderKonsessies(){
   if(!db.konsessies)db.konsessies=[];
   const tbody=document.getElementById("konsBody");
   const empty=document.getElementById("konsEmpty");
-  if(!db.konsessies.length){tbody.innerHTML="";empty.style.display="block";return;}
+  const items=db.konsessies
+    .filter(k=>k.graad===currentGraad)
+    .sort((a,b)=>a.naam.localeCompare(b.naam,"af"));
+  if(!items.length){tbody.innerHTML="";empty.style.display="block";return;}
   empty.style.display="none";
   tbody.innerHTML="";
-  db.konsessies.forEach(k=>{
+  items.forEach(k=>{
     const tr=document.createElement("tr");
     tr.innerHTML=`
       <td style="font-weight:500">${k.naam}</td>
-      <td><span class="status-badge" style="background:#eff6ff;color:#1d4ed8">${k.graad}</span></td>
       <td>${k.ekstraTyd>0?`<span class="status-badge" style="background:#fef3c7;color:#92400e">+${k.ekstraTyd} min/h</span>`:"<span style='color:#94a3b8;font-size:13px'>Geen</span>"}</td>
       <td style="font-size:13px;color:#64748b">${k.nota||"—"}</td>
       <td style="display:${konsLBRol?"":"none"}">
@@ -1730,7 +1865,7 @@ function renderReëlings(){
   if(!db.reelings)db.reelings=[];
   const tipes={oorsees:{body:"oorsesBody",empty:"oorsesEmpty"},igo:{body:"igoBody",empty:"igoEmpty"},ander:{body:"anderBody",empty:"anderEmpty"}};
   Object.entries(tipes).forEach(([tipe,els])=>{
-    const items=db.reelings.filter(r=>r.tipe===tipe);
+    const items=db.reelings.filter(r=>r.tipe===tipe&&r.graad===currentGraad).sort((a,b)=>a.naam.localeCompare(b.naam,"af"));
     const tbody=document.getElementById(els.body);
     const empty=document.getElementById(els.empty);
     tbody.innerHTML="";
@@ -1739,11 +1874,11 @@ function renderReëlings(){
     items.forEach(r=>{
       const tr=document.createElement("tr");
       if(tipe==="igo"){
-        tr.innerHTML=`<td style="font-weight:500">${r.naam}</td><td><span class="status-badge" style="background:#eff6ff;color:#1d4ed8">${r.graad}</span></td><td style="font-size:13px">${r.epos||"—"}</td><td style="font-size:13px;color:#64748b">${r.nota||"—"}</td><td style="display:${konsLBRol?"":"none"}"><button class="icon-btn edit" onclick="editReeling('${r.id}')"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="delReeling('${r.id}')"><i class="ti ti-trash"></i></button></td>`;
+        tr.innerHTML=`<td style="font-weight:500">${r.naam}</td><td style="font-size:13px">${r.epos||"—"}</td><td style="font-size:13px;color:#64748b">${r.nota||"—"}</td><td style="display:${konsLBRol?"":"none"}"><button class="icon-btn edit" onclick="editReeling('${r.id}')"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="delReeling('${r.id}')"><i class="ti ti-trash"></i></button></td>`;
       } else if(tipe==="ander"){
-        tr.innerHTML=`<td style="font-weight:500">${r.naam}</td><td><span class="status-badge" style="background:#eff6ff;color:#1d4ed8">${r.graad}</span></td><td style="font-size:13px">${r.reeling||"—"}</td><td style="font-size:13px;color:#64748b">${r.nota||"—"}</td><td style="display:${konsLBRol?"":"none"}"><button class="icon-btn edit" onclick="editReeling('${r.id}')"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="delReeling('${r.id}')"><i class="ti ti-trash"></i></button></td>`;
+        tr.innerHTML=`<td style="font-weight:500">${r.naam}</td><td style="font-size:13px">${r.reeling||"—"}</td><td style="font-size:13px;color:#64748b">${r.nota||"—"}</td><td style="display:${konsLBRol?"":"none"}"><button class="icon-btn edit" onclick="editReeling('${r.id}')"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="delReeling('${r.id}')"><i class="ti ti-trash"></i></button></td>`;
       } else {
-        tr.innerHTML=`<td style="font-weight:500">${r.naam}</td><td><span class="status-badge" style="background:#eff6ff;color:#1d4ed8">${r.graad}</span></td><td style="font-size:13px;color:#64748b">${r.nota||"—"}</td><td style="display:${konsLBRol?"":"none"}"><button class="icon-btn edit" onclick="editReeling('${r.id}')"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="delReeling('${r.id}')"><i class="ti ti-trash"></i></button></td>`;
+        tr.innerHTML=`<td style="font-weight:500">${r.naam}</td><td style="font-size:13px;color:#64748b">${r.nota||"—"}</td><td style="display:${konsLBRol?"":"none"}"><button class="icon-btn edit" onclick="editReeling('${r.id}')"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="delReeling('${r.id}')"><i class="ti ti-trash"></i></button></td>`;
       }
       tbody.appendChild(tr);
     });
