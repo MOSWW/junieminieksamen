@@ -1507,21 +1507,28 @@ function renderAfwesigOorsig(){
       <td style="font-weight:500">${a.leerder}</td>
       <td style="font-size:13px">${a.eksamen||"—"}</td>
       <td style="font-size:13px;white-space:nowrap">${fmt(a.datum)}</td>
-      <td><span class="status-badge ${a.status==="Aanwesig"?"status-aanwesig":"status-afwesig"}">${a.status}</span></td>
-      <td style="font-size:13px;min-width:160px">${afwesigLBRol&&a.status==="Afwesig"?`
+      <td><span class="status-badge ${a.status==="Aanwesig"?"status-aanwesig":a.status==="Ongemerk"?"status-opstel":"status-afwesig"}">${a.status}</span></td>
+      <td style="font-size:13px;min-width:160px">${afwesigLBRol?`
         <textarea onchange="updateAfwesigRede('${a.id}',this.value)" rows="2" style="width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border:1px solid var(--card-border);border-radius:var(--radius);color:#1e293b;resize:vertical" placeholder="Tik rede in...">${a.rede||""}</textarea>`
         :`<span style="color:${a.rede?"#374151":"#cbd5e1"}">${a.rede||"—"}</span>`}
       </td>
       <td style="display:${afwesigLBRol?"":"none"}">
-        ${a.status==="Afwesig"?`
-          <select onchange="aksieKies('${a.id}',this.value)" style="font-family:inherit;font-size:12px;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--card-border);background:#fff;cursor:pointer;color:#1e293b">
-            <option value="">— Kies aksie —</option>
-            <option value="geen" ${!inGemis&&a.aksie==="geen"?"selected":""}>Geen</option>
-            <option value="gemis" ${inGemis?"selected":""}>Gemiste vraestelle</option>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <select onchange="updateAfwesigStatus('${a.id}',this.value)" style="font-family:inherit;font-size:12px;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--card-border);background:#fff;cursor:pointer;color:#1e293b">
+            <option value="Aanwesig" ${a.status==="Aanwesig"?"selected":""}>Aanwesig</option>
+            <option value="Afwesig" ${a.status==="Afwesig"?"selected":""}>Afwesig</option>
+            <option value="Ongemerk" ${a.status==="Ongemerk"?"selected":""}>Ongemerk</option>
           </select>
-          ${inGemis?`<span style="font-size:11px;color:#166534;display:block;margin-top:3px"><i class="ti ti-circle-check" style="vertical-align:-1px"></i> Bygevoeg</span>`:""}
-        `:""}
-        <button class="icon-btn del" onclick="delAfwesig('${a.id}')" title="Verwyder" style="margin-left:4px"><i class="ti ti-trash" aria-hidden="true"></i></button>
+          ${a.status==="Afwesig"?`
+          <select onchange="aksieKies('${a.id}',this.value)" style="font-family:inherit;font-size:12px;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--card-border);background:#fff;cursor:pointer;color:#1e293b">
+            <option value="">— Gemiste vraestel —</option>
+            <option value="geen" ${!inGemis&&a.aksie==="geen"?"selected":""}>Geen</option>
+            <option value="gemis" ${inGemis?"selected":""}>Voeg by gemiste vraestelle</option>
+          </select>
+          ${inGemis?`<span style="font-size:11px;color:#166534"><i class="ti ti-circle-check" style="vertical-align:-1px"></i> Bygevoeg</span>`:""}
+          `:""}
+          <button class="icon-btn del" onclick="delAfwesig('${a.id}')" title="Verwyder"><i class="ti ti-trash" aria-hidden="true"></i></button>
+        </div>
       </td>`;
     tbody.appendChild(tr);
   });
@@ -1531,6 +1538,18 @@ function updateAfwesigRede(id,rede){
   const a=db.afwesig.find(a=>a.id===id);
   if(!a)return;
   a.rede=rede;save();showToast("Rede gestoor");
+}
+
+function updateAfwesigStatus(id,status){
+  const a=db.afwesig.find(a=>a.id===id);
+  if(!a)return;
+  const oudeStatus=a.status;
+  a.status=status;
+  if(oudeStatus==="Afwesig"&&status!=="Afwesig"){
+    if(db.gemis)db.gemis=db.gemis.filter(g=>!(g.leerder===a.leerder&&g.vraestel===a.eksamen&&g.graad===a.graad));
+    a.aksie="";
+  }
+  save();renderAfwesigOorsig();renderGemisGroepe();showToast("Status verander na "+status);
 }
 
 function aksieKies(id,aksie){
