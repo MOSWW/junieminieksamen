@@ -1506,7 +1506,7 @@ function renderAfwesigOorsig(){
     tr.innerHTML=`
       <td style="font-weight:500">${a.leerder}</td>
       <td style="font-size:13px">${a.eksamen||"—"}</td>
-      <td style="font-size:13px;white-space:nowrap">${fmt(a.datum)}</td>
+      <td style="font-size:13px;white-space:nowrap">${a.datum?fmt(a.datum):fmt((db.eksamens.find(e=>e.vak===a.eksamen&&e.graad===a.graad)||{}).datum)||"—"}</td>
       <td><span class="status-badge ${a.status==="Aanwesig"?"status-aanwesig":a.status==="Ongemerk"?"status-opstel":"status-afwesig"}">${a.status}</span></td>
       <td style="font-size:13px;min-width:160px">${afwesigLBRol?`
         <textarea onchange="updateAfwesigRede('${a.id}',this.value)" rows="2" style="width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border:1px solid var(--card-border);border-radius:var(--radius);color:#1e293b;resize:vertical" placeholder="Tik rede in...">${a.rede||""}</textarea>`
