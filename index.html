@@ -858,7 +858,7 @@ function toonSyncStatus(staat){
   el.textContent=ikone[staat]+" "+tekste[staat];
 }
 
-// Stoor ALLES na Firebase — klaslyste ook
+// Stoor ALLES na Firebase — klaslyste en registerSlotte apart
 async function stoorNaFirebase(){
   toonSyncStatus("besig");
   const dbKlein={
@@ -869,10 +869,9 @@ async function stoorNaFirebase(){
     afwesig:db.afwesig,
     gemis:db.gemis,
     konsessies:db.konsessies,
-    reelings:db.reelings||[],
-    registerSlotte:db.registerSlotte||{}
+    reelings:db.reelings||[]
   };
-  // Stoor aktiewe data
+  // Stoor aktiewe data (sonder registerSlotte — dit gaan apart)
   try{
     const r=await fetch(FIREBASE_URL+"/data.json",{
       method:"PUT",
@@ -882,13 +881,23 @@ async function stoorNaFirebase(){
     _laasStoor=Date.now();
     toonSyncStatus(r.ok?"ok":"fout");
   }catch(e){toonSyncStatus("fout");}
-  // Stoor klaslyste apart — slegs as dit verander het
+  // Stoor klaslyste apart
   if(db.klaslystePerVraestel&&Object.keys(db.klaslystePerVraestel).length>0){
     try{
       await fetch(FIREBASE_URL+"/klaslyste.json",{
         method:"PUT",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify(db.klaslystePerVraestel)
+      });
+    }catch(e){}
+  }
+  // Stoor registerSlotte apart — word NOOIT deur ander gebruikers se stoor oorskryf
+  if(db.registerSlotte&&Object.keys(db.registerSlotte).length>0){
+    try{
+      await fetch(FIREBASE_URL+"/registerSlotte.json",{
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(db.registerSlotte)
       });
     }catch(e){}
   }
@@ -916,6 +925,12 @@ async function laaiVanFirebase(){
         if(klaslyste)db.klaslystePerVraestel=klaslyste;
       }catch(e){}
     }
+    // Laai registerSlotte altyd apart
+    try{
+      const rs=await fetch(FIREBASE_URL+"/registerSlotte.json");
+      const slotte=await rs.json();
+      if(slotte&&typeof slotte==="object")db.registerSlotte=slotte;
+    }catch(e){}
     try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
     initDB();renderAll();
     toonSyncStatus("ok");
@@ -938,9 +953,8 @@ function beginLuister(){
       if(!nuutData)return;
       if(Date.now()-_laasStoor<3000)return;
       if(_syncTimer)return;
-      // Behou huidige klaslyste en registerSlotte
+      // Behou huidige klaslyste
       nuutData.klaslystePerVraestel=db.klaslystePerVraestel||{};
-      nuutData.registerSlotte=nuutData.registerSlotte||db.registerSlotte||{};
       db=nuutData;
       try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
       initDB();renderAll();toonSyncStatus("ok");
@@ -1350,6 +1364,12 @@ function koWisselSlot(){
     db.registerSlotte[sleutel]={gestoor:new Date().toISOString(),datum:""};
     showToast(vak+" — register gesluit");
   }
+  // Stoor registerSlotte onmiddellik apart na Firebase
+  fetch(FIREBASE_URL+"/registerSlotte.json",{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(db.registerSlotte)
+  }).catch(()=>{});
   save();updateAfwesigFilters();toonSlotStatus();
 }
 
@@ -1430,6 +1450,12 @@ function stoorRegister(){
   });
   db.registerSlotte[eksamen+"|"+graad]={gestoor:new Date().toISOString(),datum};
   registerKOOopgesluit=false;
+  // Stoor registerSlotte onmiddellik apart na Firebase
+  fetch(FIREBASE_URL+"/registerSlotte.json",{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(db.registerSlotte)
+  }).catch(()=>{});
   save();updateAfwesigFilters();toonSlotStatus();renderAfwesigOorsig();renderGemisGroepe();
   showToast("Register gestoor en gesluit");
 }
