@@ -925,14 +925,15 @@ async function laaiVanFirebase(){
         if(klaslyste)db.klaslystePerVraestel=klaslyste;
       }catch(e){}
     }
-    // Laai registerSlotte altyd apart
+    // Laai registerSlotte altyd apart — wag tot dit klaar is voor renderAll
     try{
       const rs=await fetch(FIREBASE_URL+"/registerSlotte.json");
       const slotte=await rs.json();
       if(slotte&&typeof slotte==="object")db.registerSlotte=slotte;
-    }catch(e){}
+      else db.registerSlotte=db.registerSlotte||{};
+    }catch(e){db.registerSlotte=db.registerSlotte||{};}
     try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
-    initDB();renderAll();
+    initDB();renderAll();updateAfwesigFilters();
     toonSyncStatus("ok");
     beginLuister();
   }catch(e){
