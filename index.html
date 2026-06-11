@@ -954,8 +954,9 @@ function beginLuister(){
       if(!nuutData)return;
       if(Date.now()-_laasStoor<3000)return;
       if(_syncTimer)return;
-      // Behou huidige klaslyste
+      // Behou huidige klaslyste EN registerSlotte (word apart gestoor)
       nuutData.klaslystePerVraestel=db.klaslystePerVraestel||{};
+      nuutData.registerSlotte=db.registerSlotte||{};
       db=nuutData;
       try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
       initDB();renderAll();toonSyncStatus("ok");
