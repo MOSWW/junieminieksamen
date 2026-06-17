@@ -942,31 +942,34 @@ async function laaiVanFirebase(){
   }
 }
 
-// Luister vir veranderinge van ander gebruikers
+// Pols Firebase elke 15 sekondes (spaar data vs EventSource stroom)
+let _polsTimer=null;
 function beginLuister(){
   if(_luisterAktief)return;
   _luisterAktief=true;
-  const es=new EventSource(FIREBASE_URL+"/data.json");
-  es.addEventListener("put",(e)=>{
+  let _polsTeller=0;
+  async function pols(){
+    if(Date.now()-_laasStoor<3000){_polsTimer=setTimeout(pols,15000);return;}
+    if(_syncTimer){_polsTimer=setTimeout(pols,15000);return;}
     try{
-      const pkg=JSON.parse(e.data);
-      const nuutData=pkg.data;
-      if(!nuutData)return;
-      if(Date.now()-_laasStoor<3000)return;
-      if(_syncTimer)return;
-      // Behou huidige klaslyste EN registerSlotte (word apart gestoor)
+      const r=await fetch(FIREBASE_URL+"/data.json");
+      const nuutData=await r.json();
+      if(!nuutData){_polsTimer=setTimeout(pols,15000);return;}
+      // Behou klaslyste
       nuutData.klaslystePerVraestel=db.klaslystePerVraestel||{};
-      nuutData.registerSlotte=db.registerSlotte||{};
+      // Herlaai registerSlotte van Firebase elke keer
+      try{
+        const rs=await fetch(FIREBASE_URL+"/registerSlotte.json");
+        const slotte=await rs.json();
+        nuutData.registerSlotte=(slotte&&typeof slotte==="object")?slotte:{};
+      }catch(e){nuutData.registerSlotte=db.registerSlotte||{};}
       db=nuutData;
       try{localStorage.setItem(sk("db"),JSON.stringify(db));}catch(e){}
       initDB();renderAll();toonSyncStatus("ok");
-    }catch(err){}
-  });
-  es.onerror=()=>{
-    _luisterAktief=false;
-    es.close();
-    setTimeout(beginLuister,5000);
-  };
+    }catch(e){toonSyncStatus("fout");}
+    _polsTimer=setTimeout(pols,15000);
+  }
+  _polsTimer=setTimeout(pols,15000);
 }
 
 function save(){
